@@ -2,7 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import multer from "multer";
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,9 +23,8 @@ async function startServer() {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      // Using pdf-parse v2 API
-      const parser = new PDFParse({ data: req.file.buffer });
-      const result = await parser.getText();
+      // Using pdf-parse v1.1.1 API
+      const result = await pdfParse(req.file.buffer);
       res.json({ text: result.text });
       
     } catch (error: any) {

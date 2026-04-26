@@ -3,9 +3,11 @@
 AI-powered conversational proficiency assessment and personalized career learning plans.
 
 ## Problem Statement
+
 A resume tells you what someone claims to know — not how well they actually know it. SkillCatalyst is an agent that takes a Job Description and a candidate's resume, conversationally assesses real proficiency on each required skill, identifies gaps, and generates a personalised learning plan.
 
 ## Features
+
 - **PDF Resume Parsing**: Extracts content from resumes using `pdf-parse`.
 - **Skill Extraction**: Gemini 3 Flash automatically identifies core requirements from JDs vs Claims in Resumes.
 - **Conversational AssessmentAgent**: A specialized AI interviewer that probes into specific skills to verify real-world proficiency.
@@ -13,6 +15,7 @@ A resume tells you what someone claims to know — not how well they actually kn
 - **Modern UI**: Built with React 19, Tailwind CSS 4, and Framer Motion for a fluid experience.
 
 ## Tech Stack
+
 - **Frontend**: React, Tailwind CSS, Lucide React, Framer Motion.
 - **AI**: Google Gemini API (@google/genai SDK).
 - **Backend**: Node.js, Express, Multer, pdf-parse.
@@ -36,10 +39,21 @@ A resume tells you what someone claims to know — not how well they actually kn
 5. Open `http://localhost:3000` in your browser.
 
 ## Architecture
+
 1. **Input Phase**: User provides JD and Resume.
 2. **Analysis Phase**: Gemini extracts required vs claimed skills.
 3. **Verification Phase**: A conversational loop where Gemini acts as a technical interviewer.
 4. **Closing Phase**: Logic calculates gaps and prompts Gemini to generate a JSON-structured learning path.
 
+## Deployment (Vercel)
+
+The application is structured to easily deploy on Vercel as a full-stack App (React Frontend + Express API via Serverless Functions).
+
+1. Push your code to a GitHub repository.
+2. Import the project in Vercel.
+3. Add `GEMINI_API_KEY` to your Vercel Environment Variables.
+4. Deploy! Vercel will automatically use `vercel.json` to route `/api/*` to the Express backend and everything else to the static React build.
+
 ---
-*Built for Catalyst Hackathon • Deccan AI*
+
+_Built for Catalyst Hackathon • Deccan AI_

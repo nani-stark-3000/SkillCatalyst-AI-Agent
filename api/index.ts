@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
 
 // Important: Vercel needs its body parser disabled for multer to work
 export const config = {
@@ -21,8 +21,7 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const parser = new PDFParse({ data: req.file.buffer });
-    const result = await parser.getText();
+    const result = await pdfParse(req.file.buffer);
     res.json({ text: result.text });
   } catch (error: any) {
     console.error("Error parsing PDF:", error);

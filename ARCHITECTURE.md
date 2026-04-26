@@ -22,14 +22,14 @@ The application is built on a modern, decoupled React frontend + Express API arc
 
 ```mermaid
 graph TD
-    A[User] -->|Uploads PDF Resume & JD Text| B[React Frontend]
-    B -->|POST /api/parse-resume (File Data)| C[Express API (pdf-parse)]
-    C -->|Returns Extracted Text| B
-    B -->|Phase 1: Resume & JD Text| D[Gemini API (Skill Extraction)]
-    D -->|JSON: List of Required Skills vs Claims| B
-    B -->|Phase 2: Conversation/Answers| D
-    D -->|Conversational Technical Probing| B
-    B -->|Phase 3: Final Analysis Request| D
-    D -->|JSON: Final Score & Learning Path| B
-    B -->|Visualizes Report| A
+    A[User] -->|"Uploads PDF Resume & JD Text"| B[React Frontend]
+    B -->|"POST /api/parse-resume File Data"| C[Express API pdf-parse]
+    C -->|"Returns Extracted Text"| B
+    B -->|"Phase 1: Resume & JD Text"| D[Gemini API Skill Extraction]
+    D -->|"JSON: List of Required Skills vs Claims"| B
+    B -->|"Phase 2: Conversation Answers"| D
+    D -->|"Conversational Technical Probing"| B
+    B -->|"Phase 3: Final Analysis Request"| D
+    D -->|"JSON: Final Score & Learning Path"| B
+    B -->|"Visualizes Report"| A
 ```

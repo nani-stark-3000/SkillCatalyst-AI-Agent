@@ -48,6 +48,20 @@ interface LearningPlanItem {
   priority: 'High' | 'Medium' | 'Low';
 }
 
+interface SkillScore {
+  skill: string;
+  score: number;
+  level: string;
+  note: string;
+}
+
+interface AssessmentReport {
+  overallScore: number;
+  summary: string;
+  skillScores: SkillScore[];
+  learningPlan: LearningPlanItem[];
+}
+
 // --- Initialization ---
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -61,7 +75,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
-  const [learningPlan, setLearningPlan] = useState<LearningPlanItem[]>([]);
+  const [finalReport, setFinalReport] = useState<AssessmentReport | null>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +129,8 @@ export default function App() {
         Output as JSON array of objects with keys: name, category, jdRequirement, resumeClaim.
         Only include skills relevant to the JD.`,
         config: {
+          temperature: 0.1,
+          systemInstruction: "You are a deterministic, highly precise skill extraction and matching engine. Strictly rely only on the text provided.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.ARRAY,
@@ -169,6 +185,7 @@ export default function App() {
           { role: 'user', parts: [{ text: userMsg }] }
         ],
         config: {
+          temperature: 0.1,
           systemInstruction: `You are a technical interviewer assessing proficiency. 
           Current unverified skills: ${skills.filter(s => s.proficiency === 'unverified').map(s => s.name).join(', ')}.
           
@@ -200,34 +217,60 @@ export default function App() {
     try {
       const response = await ai.models.generateContent({
         model: AI_MODEL,
-        contents: `Based on our conversation and the skills I've extracted, generate a personalized learning plan.
+        contents: `Based on our conversation and the skills I've extracted, generate a comprehensive assessment report and a personalized learning plan.
         
         JD: ${jdText}
         RESUME: ${resumeText}
         CONVERSATION: ${messages.map(m => m.content).join("\n")}
         
-        Return a JSON plan focusing on skills that are gaps or need improvement for the JD.
-        Keys: skill, resource (title), url (suggest a real educational platform link like Coursera/Udemy/Docs), duration (e.g. 2 weeks), priority.`,
+        Return a JSON object with:
+        - overallScore: integer 0-100 indicating how well the candidate matches the JD overall. IMPORTANT: This MUST exactly be the mathematical average of the individual skillScores.
+        - summary: A short clean summary of their fit.
+        - skillScores: An array of skills assessed, give a score 0-100, level (Beginner/Intermediate/Advanced/Expert), and a brief note based strictly on the provided evidence.
+        - learningPlan: A plan focusing on skills that are gaps or need improvement for the JD. Keys: skill, resource (title), url (suggest a real educational platform link like Coursera/Udemy), duration (e.g. 2 weeks), priority.`,
         config: {
+          temperature: 0.0,
+          systemInstruction: "You are a deterministic evaluator. Score systematically based strictly on explicit evidence from the text and conversation history. Calculate the overall score perfectly.",
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                skill: { type: Type.STRING },
-                resource: { type: Type.STRING },
-                url: { type: Type.STRING },
-                duration: { type: Type.STRING },
-                priority: { type: Type.STRING, enum: ["High", "Medium", "Low"] }
+            type: Type.OBJECT,
+            properties: {
+              overallScore: { type: Type.INTEGER },
+              summary: { type: Type.STRING },
+              skillScores: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    skill: { type: Type.STRING },
+                    score: { type: Type.INTEGER },
+                    level: { type: Type.STRING },
+                    note: { type: Type.STRING }
+                  },
+                  required: ["skill", "score", "level", "note"]
+                }
               },
-              required: ["skill", "resource", "url", "duration", "priority"]
-            }
+              learningPlan: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    skill: { type: Type.STRING },
+                    resource: { type: Type.STRING },
+                    url: { type: Type.STRING },
+                    duration: { type: Type.STRING },
+                    priority: { type: Type.STRING, enum: ["High", "Medium", "Low"] }
+                  },
+                  required: ["skill", "resource", "url", "duration", "priority"]
+                }
+              }
+            },
+            required: ["overallScore", "summary", "skillScores", "learningPlan"]
           }
         }
       });
 
-      setLearningPlan(JSON.parse(response.text || '[]'));
+      setFinalReport(JSON.parse(response.text || '{}'));
       setStep('plan');
     } catch (error) {
       console.error('Plan generation failed:', error);
@@ -481,90 +524,131 @@ export default function App() {
     </div>
   );
 
-  const renderPlan = () => (
-    <div className="max-w-6xl mx-auto py-20 space-y-16 animate-in fade-in zoom-in-95 duration-1000 relative z-10">
-      <div className="text-center space-y-6">
-        <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.3em]">
-          <CheckCircle2 className="w-3 h-3 shadow-glow" />
-          Intelligence Synthesis Complete
+  const renderPlan = () => {
+    if (!finalReport) return null;
+
+    return (
+      <div className="max-w-6xl mx-auto py-20 space-y-16 animate-in fade-in zoom-in-95 duration-1000 relative z-10">
+        <div className="text-center space-y-6">
+          <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.3em]">
+            <CheckCircle2 className="w-3 h-3 shadow-glow" />
+            Intelligence Synthesis Complete
+          </div>
+          <h2 className="text-5xl font-light text-white tracking-tight">Professional <span className="font-semibold italic text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Catalyst Roadmap</span></h2>
+          
+          <div className="flex justify-center my-12">
+            <div className="bg-black/20 border border-white/5 p-10 rounded-full flex items-center justify-center relative shadow-[0_0_50px_rgba(34,211,238,0.1)]">
+              <div className="absolute inset-0 border border-cyan-400/50 rounded-full animate-[spin_4s_linear_infinite] shadow-[0_0_15px_rgba(34,211,238,0.3)]"></div>
+              <div className="text-center">
+                <div className="text-7xl font-normal text-white">{finalReport.overallScore}<span className="text-4xl text-slate-500">%</span></div>
+                <div className="text-[10px] font-mono text-cyan-400 uppercase tracking-[0.3em] mt-3">Overall Match</div>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-slate-400 max-w-2xl mx-auto text-lg font-light leading-relaxed">
+            {finalReport.summary}
+          </p>
         </div>
-        <h2 className="text-5xl font-light text-white tracking-tight">Professional <span className="font-semibold italic text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Catalyst Roadmap</span></h2>
-        <p className="text-slate-400 max-w-2xl mx-auto text-lg font-light leading-relaxed">
-          Based on the verified delta between your profile and JD requirements, we have calibrated a precision learning trajectory.
-        </p>
-      </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {learningPlan.map((item, i) => (
-          <motion.div 
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="group relative glass p-8 rounded-[32px] hover:border-indigo-500/30 transition-all duration-500 flex flex-col"
-          >
-            <div className={`absolute top-0 right-0 px-5 py-2 rounded-bl-2xl text-[9px] font-bold uppercase tracking-widest ${
-              item.priority === 'High' ? 'bg-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
-              item.priority === 'Medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-cyan-500/20 text-cyan-400'
-            }`}>
-              {item.priority} Priority
-            </div>
-            
-            <div className="flex-1 space-y-8">
-              <div className="space-y-2">
-                <div className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em]">Phase 0{i+1}</div>
-                <h4 className="text-2xl font-medium text-white group-hover:text-cyan-400 transition-colors tracking-tight">{item.skill}</h4>
-              </div>
-
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-                    <BookOpen className="w-5 h-5 text-indigo-400" />
-                  </div>
+        <div className="space-y-8">
+          <h3 className="text-2xl font-light text-white tracking-tight border-b border-white/10 pb-4">Skill Assessment Match Scores</h3>
+          <div className="grid md:grid-cols-2 gap-6">
+            {finalReport.skillScores.map((score, i) => (
+              <div key={i} className="glass p-6 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all duration-300">
+                <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500/50 group-hover:bg-cyan-400 transition-colors"></div>
+                <div className="flex justify-between items-start mb-4">
                   <div>
-                    <div className="text-[9px] font-mono text-slate-500 uppercase mb-1">Knowledge Resource</div>
-                    <div className="text-sm font-medium text-slate-300 leading-tight">{item.resource}</div>
+                    <div className="text-lg font-medium text-white mb-1">{score.skill}</div>
+                    <div className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest">{score.level}</div>
+                  </div>
+                  <div className="text-3xl font-light text-white">
+                    {score.score}<span className="text-base text-slate-500">%</span>
                   </div>
                 </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
-                    <Clock className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <div>
-                    <div className="text-[9px] font-mono text-slate-500 uppercase mb-1">Acquisition Velocity</div>
-                    <div className="text-sm font-medium text-slate-300">{item.duration}</div>
-                  </div>
-                </div>
+                <p className="text-sm text-slate-400 leading-relaxed font-light mt-4 pt-4 border-t border-white/5">
+                  {score.note}
+                </p>
               </div>
+            ))}
+          </div>
+        </div>
 
-              <a 
-                href={item.url} 
-                target="_blank" 
-                rel="noreferrer"
-                className="w-full inline-flex items-center justify-center gap-3 bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-600 hover:border-transparent transition-all group-hover:shadow-[0_0_30px_rgba(79,70,229,0.3)]"
+        <div className="space-y-8 pt-8">
+          <h3 className="text-2xl font-light text-white tracking-tight border-b border-white/10 pb-4">Personalized Learning Trajectory</h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {finalReport.learningPlan.map((item, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="group relative glass p-8 rounded-[32px] hover:border-indigo-500/30 transition-all duration-500 flex flex-col"
               >
-                Access Intelligence
-                <ChevronRight className="w-4 h-4 translate-x-1" />
-              </a>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+                <div className={`absolute top-0 right-0 px-5 py-2 rounded-bl-2xl text-[9px] font-bold uppercase tracking-widest ${
+                  item.priority === 'High' ? 'bg-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
+                  item.priority === 'Medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-cyan-500/20 text-cyan-400'
+                }`}>
+                  {item.priority} Priority
+                </div>
+                
+                <div className="flex-1 space-y-8 mt-4">
+                  <div className="space-y-2">
+                    <div className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em]">Phase 0{i+1}</div>
+                    <h4 className="text-2xl font-medium text-white group-hover:text-cyan-400 transition-colors tracking-tight">{item.skill}</h4>
+                  </div>
 
-      <div className="flex flex-col items-center gap-8 pt-12">
-        <div className="w-px h-20 bg-gradient-to-b from-transparent to-white/10"></div>
-        <button 
-          onClick={() => window.location.reload()}
-          className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.4em] hover:text-cyan-400 transition-colors flex items-center gap-4"
-        >
-          <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
-          Restart Diagnostic Protocol
-          <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
-        </button>
+                  <div className="space-y-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                        <BookOpen className="w-5 h-5 text-indigo-400" />
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-mono text-slate-500 uppercase mb-1">Knowledge Resource</div>
+                        <div className="text-sm font-medium text-slate-300 leading-tight">{item.resource}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+                        <Clock className="w-5 h-5 text-cyan-400" />
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-mono text-slate-500 uppercase mb-1">Acquisition Velocity</div>
+                        <div className="text-sm font-medium text-slate-300">{item.duration}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <a 
+                    href={item.url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-3 bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-600 hover:border-transparent transition-all group-hover:shadow-[0_0_30px_rgba(79,70,229,0.3)] mt-auto"
+                  >
+                    Access Intelligence
+                    <ChevronRight className="w-4 h-4 translate-x-1" />
+                  </a>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-8 pt-12">
+          <div className="w-px h-20 bg-gradient-to-b from-transparent to-white/10"></div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.4em] hover:text-cyan-400 transition-colors flex items-center gap-4"
+          >
+            <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
+            Restart Diagnostic Protocol
+            <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-brand-bg text-slate-200 selection:bg-cyan-500/30 selection:text-white font-sans p-6 md:p-12 relative overflow-x-hidden">
@@ -628,43 +712,6 @@ export default function App() {
         <div className="text-[9px] font-mono text-slate-600 uppercase tracking-[0.5em] text-center md:text-right">
           © 2026 SkillCatalyst Agent • All Systems Optimal
         </div>
-      </footer>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-[#FDFCFB] text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 font-sans p-4 md:p-8">
-      {/* Background elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-50/50 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-50/30 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4"></div>
-      </div>
-
-      <header className="max-w-7xl mx-auto flex items-center justify-between mb-12">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center rotate-3 shadow-lg">
-            <BrainCircuit className="text-white w-6 h-6" />
-          </div>
-          <span className="text-xl font-black tracking-tighter text-slate-900">SKILL CATALYST</span>
-        </div>
-        <nav className="hidden md:flex items-center gap-8">
-          <a href="#" className="text-xs font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest transition-colors">How it works</a>
-          <a href="#" className="text-xs font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest transition-colors">Enterprise</a>
-          <button className="bg-white border border-slate-200 px-5 py-2 rounded-full text-xs font-bold hover:shadow-md transition-all">Sign In</button>
-        </nav>
-      </header>
-
-      <main className="max-w-7xl mx-auto">
-        <AnimatePresence mode="wait">
-          {step === 'upload' && renderUpload()}
-          {step === 'analyzing' && renderAnalyzing()}
-          {step === 'assessment' && renderAssessment()}
-          {step === 'plan' && renderPlan()}
-        </AnimatePresence>
-      </main>
-
-      <footer className="max-w-7xl mx-auto mt-24 py-12 border-t border-slate-100 text-center">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Catalyst AI Prototype v1.0 • Built for Deccan Hackathon</p>
       </footer>
     </div>
   );

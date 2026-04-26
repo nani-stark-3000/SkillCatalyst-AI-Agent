@@ -2,12 +2,8 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import multer from "multer";
+import { PDFParse } from "pdf-parse";
 import { fileURLToPath } from "url";
-import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse");
-const pdf = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,13 +23,17 @@ async function startServer() {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const data = await pdf(req.file.buffer);
-      res.json({ text: data.text });
+      // Using pdf-parse v2 API
+      const parser = new PDFParse({ data: req.file.buffer });
+      const result = await parser.getText();
+      res.json({ text: result.text });
+      
     } catch (error: any) {
       console.error("Error parsing PDF:", error);
       res.status(500).json({ error: "Failed to parse PDF resume" });
     }
   });
+
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

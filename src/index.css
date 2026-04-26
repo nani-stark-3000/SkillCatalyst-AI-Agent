@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-bg: #050508;
+  --color-accent-cyan: #22d3ee;
+  --color-accent-indigo: #4f46e5;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-bg text-slate-200 antialiased overflow-x-hidden;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/5 border border-white/10 backdrop-blur-md;
+  }
+  .glow-cyan {
+    @apply shadow-[0_0_20px_-5px_rgba(34,211,238,0.3)];
+  }
+  .glow-indigo {
+    @apply shadow-[0_0_20px_-5px_rgba(79,70,229,0.3)];
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20;
+  }
+}
+

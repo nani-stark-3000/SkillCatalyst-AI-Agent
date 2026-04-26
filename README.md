@@ -38,12 +38,12 @@ A resume tells you what someone claims to know — not how well they actually kn
    ```
 5. Open `http://localhost:3000` in your browser.
 
-## Architecture
+## Architecture & Logic Documentation
 
-1. **Input Phase**: User provides JD and Resume.
-2. **Analysis Phase**: Gemini extracts required vs claimed skills.
-3. **Verification Phase**: A conversational loop where Gemini acts as a technical interviewer.
-4. **Closing Phase**: Logic calculates gaps and prompts Gemini to generate a JSON-structured learning path.
+For a detailed breakdown of the system components and scoring heuristics, please refer to the following documents:
+
+- [System Architecture Diagram (ARCHITECTURE.md)](./ARCHITECTURE.md)
+- [Scoring Logic & AI Implementation (SCORING_LOGIC.md)](./SCORING_LOGIC.md)
 
 ## Deployment (Vercel)
 

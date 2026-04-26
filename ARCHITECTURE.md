@@ -21,15 +21,27 @@ The application is built on a modern, decoupled React frontend + Express API arc
 ## Data Flow Diagram
 
 ```mermaid
-graph TD
-    A[User] -->|"Uploads PDF Resume & JD Text"| B[React Frontend]
-    B -->|"POST /api/parse-resume File Data"| C[Express API pdf-parse]
-    C -->|"Returns Extracted Text"| B
-    B -->|"Phase 1: Resume & JD Text"| D[Gemini API Skill Extraction]
-    D -->|"JSON: List of Required Skills vs Claims"| B
-    B -->|"Phase 2: Conversation Answers"| D
-    D -->|"Conversational Technical Probing"| B
-    B -->|"Phase 3: Final Analysis Request"| D
-    D -->|"JSON: Final Score & Learning Path"| B
-    B -->|"Visualizes Report"| A
+sequenceDiagram
+    actor User
+    participant UI as React Frontend
+    participant API as Express API
+    participant Gemini as Gemini API
+
+    User->>UI: Uploads PDF Resume & JD Text
+    UI->>API: POST /api/parse-resume (File Data)
+    API-->>UI: Returns Extracted Text
+    
+    Note over UI,Gemini: Phase 1: Skill Extraction
+    UI->>Gemini: Send Resume & JD Text
+    Gemini-->>UI: JSON: Required Skills vs Claims
+    
+    Note over UI,Gemini: Phase 2: Technical Interrogation
+    UI->>Gemini: Submit Chat/Answers
+    Gemini-->>UI: Conversational Technical Probing
+    
+    Note over UI,Gemini: Phase 3: Final Synthesis
+    UI->>Gemini: Final Analysis Request (Full Context)
+    Gemini-->>UI: JSON: Final Score & Learning Path
+    
+    UI-->>User: Visualizes Report & Plan
 ```

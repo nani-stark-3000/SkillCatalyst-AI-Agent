@@ -370,8 +370,8 @@ export default function App() {
   );
 
   const renderAnalyzing = () => (
-    <div className="fixed inset-0 bg-[#050508]/90 backdrop-blur-xl flex items-center justify-center z-50">
-      <div className="flex flex-col items-center gap-8 p-12 max-w-md text-center">
+    <div className="flex-1 flex flex-col items-center justify-center py-20 min-h-[60vh] animate-in fade-in duration-1000">
+      <div className="flex flex-col flex-1 items-center justify-center gap-8 p-12 max-w-md text-center mx-auto">
         <div className="relative">
           <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-30 animate-pulse rounded-full"></div>
           <div className="w-24 h-24 rounded-3xl border border-white/20 flex items-center justify-center relative bg-black/40 rotate-12 animate-spin-slow">
@@ -382,7 +382,7 @@ export default function App() {
           <h2 className="text-3xl font-light text-white tracking-tight uppercase font-mono">Synthesizing Data</h2>
           <p className="text-slate-500 text-sm italic">Pattern matching requirements against candidate claims...</p>
         </div>
-        <div className="w-64 bg-white/5 h-1 rounded-full overflow-hidden">
+        <div className="w-64 bg-white/5 h-1 rounded-full overflow-hidden mx-auto mt-4">
           <motion.div 
             initial={{ width: "0%" }}
             animate={{ width: "100%" }}

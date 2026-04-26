@@ -2,7 +2,8 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import multer from "multer";
-import pdfParse from "pdf-parse";
+// @ts-ignore
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);

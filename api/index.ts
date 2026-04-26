@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
-import pdfParse from "pdf-parse";
+// @ts-ignore
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
 
 // Important: Vercel needs its body parser disabled for multer to work
 export const config = {

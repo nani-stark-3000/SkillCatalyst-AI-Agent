@@ -651,7 +651,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-bg text-slate-200 selection:bg-cyan-500/30 selection:text-white font-sans p-6 md:p-12 relative overflow-x-hidden">
+    <div className="min-h-screen bg-brand-bg text-slate-200 selection:bg-cyan-500/30 selection:text-white font-sans p-6 md:p-12 relative overflow-x-hidden flex flex-col">
       {/* Immersive Orbital Background */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-10%] right-[-10%] w-[1000px] h-[1000px] bg-indigo-600/10 rounded-full blur-[180px] animate-pulse"></div>
@@ -660,7 +660,7 @@ export default function App() {
              style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
       </div>
 
-      <header className="max-w-7xl mx-auto flex items-center justify-between mb-20 relative z-20 border-b border-white/5 pb-8">
+      <header className="max-w-7xl w-full mx-auto flex items-center justify-between mb-20 relative z-20 border-b border-white/5 pb-8">
         <div className="flex items-center gap-4 group cursor-pointer">
           <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center rotate-6 group-hover:rotate-12 transition-all duration-500 shadow-2xl relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -688,7 +688,7 @@ export default function App() {
         </nav>
       </header>
 
-      <main className="relative z-10">
+      <main className="relative z-10 flex-1 flex flex-col w-full max-w-7xl mx-auto">
         <AnimatePresence mode="wait">
           {step === 'upload' && renderUpload()}
           {step === 'analyzing' && renderAnalyzing()}
@@ -697,7 +697,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="max-w-7xl mx-auto mt-32 py-12 border-t border-white/5 relative z-20 flex flex-col md:flex-row justify-between items-center gap-8">
+      <footer className="max-w-7xl w-full mx-auto mt-auto pt-12 border-t border-white/5 relative z-20 flex flex-col md:flex-row justify-between items-center gap-8 pb-4">
         <div className="flex items-center gap-8">
           <div className="flex flex-col">
              <span className="text-[9px] font-mono text-slate-500 uppercase tracking-[0.3em] mb-1">Architecture v1.0.4</span>
